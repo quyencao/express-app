@@ -7,18 +7,19 @@ exports.getAddProduct = (req, res, next) => {
 exports.postAddProduct = (req, res, next) => {
    const { title, imageUrl, price, description } = req.body;
    const product = new Product(null, title, imageUrl, price, description);
-   product.save();
-   res.redirect('/');
+   product.save()
+      .then(() => {
+         res.redirect('/');
+      })
+      .catch(error => console.log(error));
 };
 
 exports.getEditProduct = (req, res, next) => {
    const productId = req.params.productId;
-   Product.findById(
-      productId,
-      (product) => {
-         res.render('admin/edit-product', { title: 'Edit Product', product, path: '/admin/edit-product', edit: true });
-      }
-   );
+   Product.findById(productId)
+         .then(([rows, fields]) => {
+            res.render('admin/edit-product', { title: 'Edit Product', product, path: '/admin/edit-product', edit: true });
+         });
 };
 
 exports.postEditProduct = (req, res, next) => {
