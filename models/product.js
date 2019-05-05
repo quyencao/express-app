@@ -12,8 +12,13 @@ module.exports = class Product {
     }
 
     save() {
-        return db.execute('INSERT INTO products (title, price, description, imageUrl) VALUES(?, ?, ?, ?)',
-            [this.title, this.price, this.description, this.imageUrl]);
+        if (this.id) {
+            return db.execute('UPDATE products SET title = ?, price = ?, description = ?, imageUrl = ? WHERE id = ?',
+                [this.title, this.price, this.description, this.imageUrl, this.id]);
+        } else {
+            return db.execute('INSERT INTO products (title, price, description, imageUrl) VALUES(?, ?, ?, ?)',
+                [this.title, this.price, this.description, this.imageUrl]);
+        }
     }
 
     static fetchAll() {

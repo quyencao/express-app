@@ -1,67 +1,23 @@
-const fs = require('fs');
-const path = require('path');
-
-const rootDir = path.dirname(process.mainModule.filename);
-const filePath = path.join(rootDir, 'data', 'cart.json');
+const db = require('../utils/database');
 
 module.exports = class Cart {
     static addProduct(id, price) {
-        fs.readFile(filePath, (err, content) => {
-            let cart = { products: [], totalPrice: 0 };
-            if (!err) {
-                cart = JSON.parse(content);
-            }
-
-            let existingProductIndex = cart.products.findIndex(p => p.id === id);
-            let existingProduct = cart.products[existingProductIndex];
-            let newProduct;
-
-            if (existingProduct) {
-                newProduct = { ...existingProduct };
-                newProduct.quantity += 1;
-                cart.products = [...cart.products];
-                cart.products[existingProductIndex] = newProduct;
-            } else {
-                newProduct = { id, quantity: 1 };
-                cart.products = [...cart.products, newProduct];
-            }
-
-            cart.totalPrice = cart.totalPrice + +price;
-
-            fs.writeFile(filePath, JSON.stringify(cart), (err) => {
-                console.log(err);
-            });
-        });
+        return db.execute('SELECT * FROM carts WHERE product_id = ?', [id])
+            .then(([rows, fields]) => {
+                if (rows.length > 0) {
+                   return db.execute('UPDATE carts SET quantity = quantity + 1 WHERE product_id = ?', [id]);
+                } else {
+                   return db.execute('INSERT INTO carts (product_id, quantity) VALUES(?, ?)', [id, 1]);
+                }
+            })
+            .catch(error => console.log(error));
     }
 
     static deleteProduct(id, price) {
-        fs.readFile(filePath, (err, content) => {
-            if (err) {
-                return;
-            }
-
-            const updatedCart = { ...JSON.parse(content) };
-            const product = updatedCart.products.find(p => p.id === id);
-
-            if (!product) {
-                return;
-            }
-
-            updatedCart.products = updatedCart.products.filter(p => p.id !== id);
-            updatedCart.totalPrice -= product.quantity * price;
-
-            fs.writeFile(filePath, JSON.stringify(updatedCart), (err) => {
-                console.log(err);
-            });
-        });
+        return db.execute('DELETE FROM carts WHERE product_id = ?', [id]);
     }
 
-    static getCart(callback) {
-        fs.readFile(filePath, (err, content) => {
-            if (err) {
-                return callback(null);
-            }
-            callback(JSON.parse(content));
-        });
+    static getCart() {
+        return db.execute('SELECT * FROM carts INNER JOIN products ON carts.product_id = products.id');
     }
 };
